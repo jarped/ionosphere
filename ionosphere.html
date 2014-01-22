@@ -26,10 +26,8 @@
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css" />
     <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
     <script src="http://code.jquery.com/ui/1.9.1/jquery-ui.js"></script>
-    <!--script src="OpenLayers.js"></script-->
     <script src="OpenLayers-2.13/OpenLayers.debug.js"></script>
     <script src="proj4js/lib/proj4js-compressed.js"></script>
-    <!--script src="proj4js-compressed.js"></script-->
     <script type="text/javascript">
 	function getQueryVariable(variable)
 	{
@@ -61,7 +59,6 @@
                     zoom=1;
                 }
             timeText = document.getElementById("timeText");
-            //timeText.innerHTML=timeString;
 	    sesolstormKont=document.getElementById("sesolstormKont");
             timeText.value=timeString;
 	    width=document.getElementById("width");
@@ -72,10 +69,7 @@
 
             var sourceProj=new OpenLayers.Projection("EPSG:4326");
             var destProj=new OpenLayers.Projection("EPSG:"+proj);
-//	    var extent = new OpenLayers.Bounds(-1500000,5000000,2500000,9000000);
 	    var geoExtent = new OpenLayers.Bounds();
-	    //geoExtent.extend(new OpenLayers.LonLat(-10.5, 49.5));
-            //geoExtent.extend(new OpenLayers.LonLat(40.5, 80.5));
 	    geoExtent.extend(new OpenLayers.LonLat(-13, 46));
             geoExtent.extend(new OpenLayers.LonLat(44, 84));
 	    var extent=geoExtent.transform(sourceProj , destProj);
@@ -92,17 +86,10 @@
 	                })
 		],
 		wrapDateLine:false,
-		//projection: new OpenLayers.Projection("EPSG:900913")
-		//projection: new Proj4js.Proj("EPSG:"+proj)
-
-	        center:new OpenLayers.LonLat(15,65).transform(sourceProj , destProj),//new OpenLayers.LonLat(375000,7200000),
-
-	        //center:new OpenLayers.LonLat(375000,7200000),
+	    center:new OpenLayers.LonLat(15,65).transform(sourceProj , destProj),
 		maxExtent:extent,
 		restrictedExtent:extent,
-		//displayprojection: destProj, //new OpenLayers.Projection("EPSG:"+proj),
-		projection: destProj //new OpenLayers.Projection("EPSG:"+proj)
-		//projection: "EPSG:"+proj
+		projection: destProj 
 		});
             
 
@@ -113,25 +100,10 @@
             roti_wms = new OpenLayers.Layer.WMS("ROTI","http://http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"ROTI",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1});
 
 	    var k_wms = new OpenLayers.Layer.WMS( "Kystkontur",
-//                "http://nnrite008/cgi-bin/worldmap?SLD=http://skrivap49/sld/worldmap.ionosphere.sld", {layers: 'Vmap0Kystkontur', transparent:true, isBaseLayer: false},  {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1} );
                 "http://wms.geonorge.no/skwms1/wms.ionosphere?", {layers: 'Overlay', transparent:true, isBaseLayer: false},  {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1} );
 
-//	    grid_wms = new OpenLayers.Layer.WMS( "Grid",
-//                "http://nnrite008.statkart.no/cgi-bin/ionosphere?", {layers: 'grid', transparent:true, isBaseLayer: false},  {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1} );
-
-//	    r_wms = new OpenLayers.Layer.WMS( "Radar",
-//                "http://public-wms.met.no/verportal/verportal.map?", {layers: 'radar_precipitation_intensity', transparent:true, isBaseLayer: false},  {singleTile: true, transitionEffect: 'resize',opacity: 1} );
-
-	    //map.setCenter(new OpenLayers.LonLat(15,65).transform( new OpenLayers.Projection("EPSG:4326"), map.projection),zoom,0,0);
-	   // map.setCenter(new OpenLayers.LonLat(15,65),zoom);
-            //map.addLayers([grid_wms,k_wms,vtec_wms, roti_wms,rotiag_wms]);
             map.addLayers([k_wms,vtec_wms, roti_wms,rotiag_wms]);
-	    //map.zoomTo(extent);
 	    map.zoomToMaxExtent();
-//            map.addLayers([r_wms]);
-//            map.addLayers([roti_wms]);
-//            map.addLayers([rotiag_wms]);
-//            map.addLayers([k_wms]);
 	    var layerName="Grid";
 	    var layerBoolean=false;
 	    var layerArray = map.layers;
@@ -143,17 +115,13 @@
         }
         function changeproj() {
 		if (proj==4326){
-			//proj=900913;
-			//proj=32633;
 			proj=3575;
-			//zoom=3;
 		}
 		else{
 			proj=4326;
-			//zoom=4;
 		}
 		
-		return 'http://skrivte57/old/ionosphere/ionosphere.html?startTime=' + timeText.value + '&crs=' + proj;// + '&zoom=' + zoom
+		return 'http://skrivte57/old/ionosphere/ionosphere.html?startTime=' + timeText.value + '&crs=' + proj;
 	} 
 	function getActiveBaseMap(){
 		var layerArray = map.layers;
@@ -165,15 +133,12 @@
 		
 	}
         function downloadPng() {
-//		layer=layerName;
-//		layerBoolean=true;
 		layer=getActiveBaseMap();
 		var year=2014;
 		var month=timeText.value.substring(5,7)
 		var day=timeText.value.substring(8,10)
 		var image=document.getElementById("image");
 		image.innerHTML='<img src="http://sesolstorm.kartverket.no/rtim/plots/'+ year +'/'+month+'/'+day+'/'+layer+'/'+layer.replace('_','')+'Grid_'+ timeText.value.substring(0,16).replace('T','_').replace(':','-') + '.png" />'
-        	//window.open('http://sesolstorm.kartverket.no/rtim/plots/'+ year +'/'+month+'/'+day+'/'+layer+'/'+layer.replace('_','')+'Grid_'+ timeText.value.substring(0,16).replace('T','_').replace(':','-') + '.png')
         }
         function downloadWms(layer) {
 		layer=getActiveBaseMap();
@@ -193,8 +158,7 @@
 	function timeStepper(steps) {
 		var tmpTime=new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
 	        if (new Date(tmpTime) <= new Date(timeText.value)) {
-			steps=(document.getElementById("loop").value*-12); //+1;
-			//steps=-11
+			steps=(document.getElementById("loop").value*-12); 
 		}
                 timeText.stepUp(steps);
          	updateMap();
@@ -213,10 +177,6 @@
 		if (sesolstormKont.checked) {
 			downloadPng();
 		}
-		//var minute=timeText.value.substring(14,16)
-            	//if (minute%15==0){
-		//	r_wms.mergeNewParams({'time':timeText.value});
-		//}
         }
     </script>
   </head>
@@ -253,7 +213,6 @@
 <td>
     <div>
 	<div id="map" class="smallmap"></div>
-	<!--img src="http://nnrite008.statkart.no/cgi-bin/ionosphere?SERVICE=WMS&VERSION=1.3.0&REQUEST=getlegendgraphic&format=image/png&layer=VTEC&sld_version=1.1.0"></img-->
     </div>
 </td>
 <td>
