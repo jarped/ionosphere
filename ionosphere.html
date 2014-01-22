@@ -1,233 +1,229 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>WMST</title>
-    <link type="text/css" href="http://openlayers.org/dev/theme/default/style.css" rel="stylesheet">
-	<style>
-		html,body {
-			height: 95%;
-			width: 99%:
-		}
-		#map {
-			width: 900px;
-			height: 600px;
-			border: 1px solid black;
-		}
-        .olControlLoadingPanel {
-            background-image:url(http://labs.kartverket.no/wp-content/uploads/2012/11/loader2.gif);
-            positoion: center;
-            width: 50%;
-            height: 50%;
-            background-position:center;
-            background-repeat:no-repeat;
-            display: none;
-        }	
-	</style>
-    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css" />
-    <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
-    <script src="http://code.jquery.com/ui/1.9.1/jquery-ui.js"></script>
-    <script src="OpenLayers-2.13/OpenLayers.debug.js"></script>
-    <script src="proj4js/lib/proj4js-compressed.js"></script>
-    <script type="text/javascript">
-	function getQueryVariable(variable)
-	{
-	       var query = window.location.search.substring(1);
-	       var vars = query.split("&");
-	       for (var i=0;i<vars.length;i++) {
-	               var pair = vars[i].split("=");
-	               if(pair[0] == variable){return pair[1];}
-	       }
-	       return(false);
-	}
-        var sesolstormKont, height, width, map, vtec_wms, roti_wms, rotiag_wms, r_wms, grid_wms, run, timeString,timeText, layer;
-        function init(){
-	    if((navigator.userAgent.indexOf('Opera')==-1)&&(navigator.userAgent.indexOf('Chrome')==-1)){
-		alert("Vennligst bruk enten Opera eller Chrome.\r\nDu er registrert med:\r\n" + navigator.userAgent)
-	    }
-	    layer='VTEC'
-            run=0;
-	    timeString=getQueryVariable("startTime");
-	    if (timeString == false){
-	            timeString =  new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
-	    	}
-	    proj=getQueryVariable("crs");
-	    if (proj == false){
-	            proj="4326";
-	    	}
-	    zoom=getQueryVariable("zoom");
-            if (zoom == false){
-                    zoom=1;
-                }
-            timeText = document.getElementById("timeText");
-	    sesolstormKont=document.getElementById("sesolstormKont");
-            timeText.value=timeString;
-	    width=document.getElementById("width");
-	    height=document.getElementById("height");
-
-	    Proj4js.defs["EPSG:32633"] = "+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
-	    Proj4js.defs["EPSG:3575"] = "+proj=laea +lat_0=90 +lon_0=10 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
-
-            var sourceProj=new OpenLayers.Projection("EPSG:4326");
-            var destProj=new OpenLayers.Projection("EPSG:"+proj);
-	    var geoExtent = new OpenLayers.Bounds();
-	    geoExtent.extend(new OpenLayers.LonLat(-13, 46));
-            geoExtent.extend(new OpenLayers.LonLat(44, 84));
-	    var extent=geoExtent.transform(sourceProj , destProj);
-            map = new OpenLayers.Map('map',  { 
-		controls: [
-			new OpenLayers.Control.PanZoom(),
-			new OpenLayers.Control.Navigation({zoomWheelEnabled: true}),
-	                new OpenLayers.Control.LayerSwitcher({'div':OpenLayers.Util.getElement('layerswitcher')}),
-		        new OpenLayers.Control.MousePosition({
-               		    prefix: 'Koordinater: ',
-	                    separator: ' | ',
-       		            numDigits: 2,
-	               	    emptyString: 'Mus utenfor kart.'
-	                })
-		],
-		wrapDateLine:false,
-	    center:new OpenLayers.LonLat(15,65).transform(sourceProj , destProj),
-		maxExtent:extent,
-		restrictedExtent:extent,
-		projection: destProj 
-		});
-            
-
-            vtec_wms = new OpenLayers.Layer.WMS("VTEC","http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"VTEC",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1});
-
-            rotiag_wms = new OpenLayers.Layer.WMS("ROTI_Ground","http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"ROTI_Ground",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true, singleTile: true, transitionEffect: 'resize',opacity: 1});
-
-            roti_wms = new OpenLayers.Layer.WMS("ROTI","http://http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"ROTI",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1});
-
-	    var k_wms = new OpenLayers.Layer.WMS( "Kystkontur",
-                "http://wms.geonorge.no/skwms1/wms.ionosphere?", {layers: 'Overlay', transparent:true, isBaseLayer: false},  {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1} );
-
-            map.addLayers([k_wms,vtec_wms, roti_wms,rotiag_wms]);
-	    map.zoomToMaxExtent();
-	    var layerName="Grid";
-	    var layerBoolean=false;
-	    var layerArray = map.layers;
-	    for (var i=0;i<layerArray.length;i++) {
-		if (map.layers[i].name == layerName) {
-			map.layers[i].setVisibility(layerBoolean);
-		}
-	    }
-        }
-        function changeproj() {
-		if (proj==4326){
-			proj=3575;
-		}
-		else{
-			proj=4326;
-		}
+	<head>
+    	<title>WMST</title>
+	    <link type="text/css" href="http://openlayers.org/dev/theme/default/style.css" rel="stylesheet">
+		<style>
+			html,body {
+				height: 95%;
+				width: 99%:
+			}
+			#map {
+				width: 900px;
+				height: 600px;
+				border: 1px solid black;
+			}
+	        .olControlLoadingPanel {
+	            background-image:url(http://labs.kartverket.no/wp-content/uploads/2012/11/loader2.gif);
+	            positoion: center;
+	            width: 50%;
+	            height: 50%;
+	            background-position:center;
+	            background-repeat:no-repeat;
+	            display: none;
+	        }	
+		</style>
+	    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css" />
+		<script src="http://code.jquery.com/jquery-1.8.2.js"></script>
+		<script src="http://code.jquery.com/ui/1.9.1/jquery-ui.js"></script>
+		<script src="OpenLayers-2.13/OpenLayers.debug.js"></script>
+		<script src="proj4js/lib/proj4js-compressed.js"></script>
+		<script type="text/javascript">
+			function getQueryVariable(variable)
+			{
+			       var query = window.location.search.substring(1);
+			       var vars = query.split("&");
+			       for (var i=0;i<vars.length;i++) {
+			               var pair = vars[i].split("=");
+			               if(pair[0] == variable){return pair[1];}
+			       }
+			       return(false);
+			}
+		    var sesolstormKont, height, width, map, vtec_wms, roti_wms, rotiag_wms, r_wms, grid_wms, run, timeString,timeText, layer;
+			function init(){
+			    if((navigator.userAgent.indexOf('Opera')==-1)&&(navigator.userAgent.indexOf('Chrome')==-1)){
+					alert("Vennligst bruk enten Opera eller Chrome.\r\nDu er registrert med:\r\n" + navigator.userAgent)
+			    }
+			    layer='VTEC'
+		        run=0;
+			    timeString=getQueryVariable("startTime");
+			    if (timeString == false){
+			            timeString =  new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
+		    	}
+			    proj=getQueryVariable("crs");
+			    if (proj == false){
+			            proj="4326";
+			   	}
+			    zoom=getQueryVariable("zoom");
+		        if (zoom == false){
+		        	zoom=1;
+	           }
+		        timeText = document.getElementById("timeText");
+			    sesolstormKont=document.getElementById("sesolstormKont");
+		        timeText.value=timeString;
+			    width=document.getElementById("width");
+			    height=document.getElementById("height");
+			    Proj4js.defs["EPSG:32633"] = "+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+			    Proj4js.defs["EPSG:3575"] = "+proj=laea +lat_0=90 +lon_0=10 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
 		
-		return 'http://skrivte57/old/ionosphere/ionosphere.html?startTime=' + timeText.value + '&crs=' + proj;
-	} 
-	function getActiveBaseMap(){
-		var layerArray = map.layers;
-		for (var i=0;i<layerArray.length;i++) {
-                if ((map.layers[i].isBaseLayer == true) && (map.layers[i].visibility==true)) {
-			return map.layers[i].name; 
-        	    }
-	        }
+		        var sourceProj=new OpenLayers.Projection("EPSG:4326");
+		        var destProj=new OpenLayers.Projection("EPSG:"+proj);
+			    var geoExtent = new OpenLayers.Bounds();
+			    geoExtent.extend(new OpenLayers.LonLat(-13, 46));
+		        geoExtent.extend(new OpenLayers.LonLat(44, 84));
+			    var extent=geoExtent.transform(sourceProj , destProj);
+		        map = new OpenLayers.Map('map',  { 
+				controls: [
+					new OpenLayers.Control.PanZoom(),
+					new OpenLayers.Control.Navigation({zoomWheelEnabled: true}),
+			        new OpenLayers.Control.LayerSwitcher({'div':OpenLayers.Util.getElement('layerswitcher')}),
+				    new OpenLayers.Control.MousePosition({
+		            	prefix: 'Koordinater: ',
+			            separator: ' | ',
+		       		    numDigits: 2,
+			            emptyString: 'Mus utenfor kart.'
+			          	})
+				],
+				wrapDateLine:false,
+			    center:new OpenLayers.LonLat(15,65).transform(sourceProj , destProj),
+				maxExtent:extent,
+				restrictedExtent:extent,
+				projection: destProj 
+				});
+	            
+		        vtec_wms = new OpenLayers.Layer.WMS("VTEC","http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"VTEC",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1});
 		
-	}
-        function downloadPng() {
-		layer=getActiveBaseMap();
-		var year=2014;
-		var month=timeText.value.substring(5,7)
-		var day=timeText.value.substring(8,10)
-		var image=document.getElementById("image");
-		image.innerHTML='<img src="http://sesolstorm.kartverket.no/rtim/plots/'+ year +'/'+month+'/'+day+'/'+layer+'/'+layer.replace('_','')+'Grid_'+ timeText.value.substring(0,16).replace('T','_').replace(':','-') + '.png" />'
-        }
-        function downloadWms(layer) {
-		layer=getActiveBaseMap();
-        	window.open('http://nnrite008.statkart.no/cgi-bin/ionosphere?service=wms&version=1.1.1&request=getmap&layers='+layer+'&srs=epsg:4326&format=image/png&transparent=true&time='+timeText.value+'&bbox=-10.5,49.5,40.5,80.5&width='+width.value+'&height='+height.value);
-        }
-        function downloadWcs(layer) {
-		layer=getActiveBaseMap();
-        	return('http://nnrite008.statkart.no/cgi-bin/ionosphere?service=wcs&version=1.0.0&request=getcoverage&coverage='+layer+'&crs=epsg:4326&resx=0.1&resy=0.1&format=geotiff&transparent=true&time='+timeText.value);
-        }
-	function start() {
-		run=1;
-	        timeStepper(1);
-        }
-        function stop() {
-        	run=0;
-        }
-	function timeStepper(steps) {
-		var tmpTime=new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
-	        if (new Date(tmpTime) <= new Date(timeText.value)) {
-			steps=(document.getElementById("loop").value*-12); 
-		}
-                timeText.stepUp(steps);
-         	updateMap();
-		if (run==1) {
-			window.setTimeout(timeStepper, (1000), 1);
-		}
-                
-	}
-	function updateTime(){
-		updateMap();
-	}
-        function updateMap(){
-		vtec_wms.mergeNewParams({'time':timeText.value});
-            	roti_wms.mergeNewParams({'time':timeText.value});
-            	rotiag_wms.mergeNewParams({'time':timeText.value});
-		if (sesolstormKont.checked) {
-			downloadPng();
-		}
-        }
-    </script>
-  </head>
-  <body onload="init()">
-<table>
-<tr>
-<td>
-    <h1 id="title">WMS Time Eksempel</h1>
-</td>
-<td>
-    <h1 id="title">Sesolstorm</h1>
-</td>
-<tr>
-<td>
-    <h2>Tidspunkt (UTC, lokaltid - 2 timer) </h2>
-    Loop (timer):<input type="number" id="loop" value="1" min="0.5" max="24" step="0.5"/>
-    <input type="datetime-local" id="timeText" step="300"/>
-    <button type="button" onclick="updateTime()">Sett tid</button>
-    <button type="button" onclick="start()">Start</button>
-    <button type="button" onclick="stop()">Stopp</button>
-    <button type="button" onclick="timeStepper(-1)">- 5 min</button>
-    <button type="button" onclick="timeStepper(1)">+ 5 min</button>
-    <button type="button" onclick="timeStepper(-12)">- 60 min</button>
-    <button type="button" onclick="timeStepper(12)">+ 60 min</button>
-</td>
-<td>
-    <button type="button" onclick="downloadPng()">Sesolstorm</button>
-    <input type="checkbox" id="sesolstormKont"/>
-    Kontinuerlig oppdatering
-
-</td>
-</tr>
-<tr>
-<td>
-    <div>
-	<div id="map" class="smallmap"></div>
-    </div>
-</td>
-<td>
-    <div id="image"></div>
-</td>
-</table>
-    <br />
-    <h2>Nedlasting</h2>
-    Dimensjoner
-    <br />
-    X<input type="number" id="width" value="500" min="100" max="1000" step="100"/>
-    Y<input type="number" id="height" value="300" min="100" max="600" step="100"/>
-    <button type="button" onclick="location.href=downloadWcs()">Data</button>
-    <button type="button" onclick="downloadWms()">Bilde</button>
-    <br />
-    <button type="button" onclick="location.href=changeproj()">Endre KS</button>
-  </body>
+		        rotiag_wms = new OpenLayers.Layer.WMS("ROTI_Ground","http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"ROTI_Ground",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true, singleTile: true, transitionEffect: 'resize',opacity: 1});
+	
+		        roti_wms = new OpenLayers.Layer.WMS("ROTI","http://http://wms.geonorge.no/skwms1/wms.ionosphere?",{layers:"ROTI",transparent:false,format:'image/png',time:timeString, isBaseLayer: true}, {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1});
+	
+			    var k_wms = new OpenLayers.Layer.WMS( "Kystkontur",
+		        	 "http://wms.geonorge.no/skwms1/wms.ionosphere?", {layers: 'Overlay', transparent:true, isBaseLayer: false},  {wrapDateLine:true,singleTile: true, transitionEffect: 'resize',opacity: 1} );
+	
+		        map.addLayers([k_wms,vtec_wms, roti_wms,rotiag_wms]);
+			    map.zoomToMaxExtent();
+			    var layerName="Grid";
+			    var layerBoolean=false;
+			    var layerArray = map.layers;
+			    for (var i=0;i<layerArray.length;i++) {
+					if (map.layers[i].name == layerName) {
+						map.layers[i].setVisibility(layerBoolean);
+					}
+			    }
+		    }
+		    function changeproj() {
+				if (proj==4326){
+					proj=3575;
+				}
+				else{
+					proj=4326;
+				}
+				
+				return 'http://skrivte57/old/ionosphere/ionosphere.html?startTime=' + timeText.value + '&crs=' + proj;
+			} 
+			function getActiveBaseMap(){
+				var layerArray = map.layers;
+				for (var i=0;i<layerArray.length;i++) {
+		            if ((map.layers[i].isBaseLayer == true) && (map.layers[i].visibility==true)) {
+						return map.layers[i].name; 
+		        	}
+			    }
+			}
+		    function downloadPng() {
+				layer=getActiveBaseMap();
+				//Needs to fetch from somewhere else
+				var year=2014;
+				var month=timeText.value.substring(5,7)
+				var day=timeText.value.substring(8,10)
+				var image=document.getElementById("image");
+				image.innerHTML='<img src="http://sesolstorm.kartverket.no/rtim/plots/'+ year +'/'+month+'/'+day+'/'+layer+'/'+layer.replace('_','')+'Grid_'+ timeText.value.substring(0,16).replace('T','_').replace(':','-') + '.png" />'
+		    }
+		    function downloadWms(layer) {
+				layer=getActiveBaseMap();
+		   	   	window.open('http://nnrite008.statkart.no/cgi-bin/ionosphere?service=wms&version=1.1.1&request=getmap&layers='+layer+'&srs=epsg:4326&format=image/png&transparent=true&time='+timeText.value+'&bbox=-10.5,49.5,40.5,80.5&width='+width.value+'&height='+height.value);
+		    }
+		    function downloadWcs(layer) {
+				layer=getActiveBaseMap();
+		       	return('http://nnrite008.statkart.no/cgi-bin/ionosphere?service=wcs&version=1.0.0&request=getcoverage&coverage='+layer+'&crs=epsg:4326&resx=0.1&resy=0.1&format=geotiff&transparent=true&time='+timeText.value);
+		    }
+			function start() {
+				run=1;
+			    timeStepper(1);
+		    }
+		    function stop() {
+		    	run=0;
+		    }
+			function timeStepper(steps) {
+				var tmpTime=new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
+			    if (new Date(tmpTime) <= new Date(timeText.value)) {
+					steps=(document.getElementById("loop").value*-12); 
+				}
+		        timeText.stepUp(steps);
+		      	updateMap();
+				if (run==1) {
+					window.setTimeout(timeStepper, (1000), 1);
+				}
+			}
+			function updateTime(){
+				updateMap();
+			}
+		    function updateMap(){
+				vtec_wms.mergeNewParams({'time':timeText.value});
+		        roti_wms.mergeNewParams({'time':timeText.value});
+		        rotiag_wms.mergeNewParams({'time':timeText.value});
+				if (sesolstormKont.checked) {
+					downloadPng();
+				}
+		    }
+		    </script>
+		</head>
+		<body onload="init()">
+		<table>
+			<tr>
+				<td>
+				    <h1 id="title">WMS Time Eksempel</h1>
+				</td>
+				<td>
+				    <h1 id="title">Sesolstorm</h1>
+				</td>
+				<tr>
+					<td>
+					    <h2>Tidspunkt (UTC, lokaltid - 2 timer) </h2>
+					    Loop (timer):<input type="number" id="loop" value="1" min="0.5" max="24" step="0.5"/>
+					    <input type="datetime-local" id="timeText" step="300"/>
+					    <button type="button" onclick="updateTime()">Sett tid</button>
+					    <button type="button" onclick="start()">Start</button>
+					    <button type="button" onclick="stop()">Stopp</button>
+					    <button type="button" onclick="timeStepper(-1)">- 5 min</button>
+					    <button type="button" onclick="timeStepper(1)">+ 5 min</button>
+					    <button type="button" onclick="timeStepper(-12)">- 60 min</button>
+					    <button type="button" onclick="timeStepper(12)">+ 60 min</button>
+				</td>
+				<td>
+				    <button type="button" onclick="downloadPng()">Sesolstorm</button>
+				    <input type="checkbox" id="sesolstormKont"/>
+				    Kontinuerlig oppdatering
+				</td>
+			</tr>
+			<tr>
+				<td>
+				    <div>
+						<div id="map" class="smallmap"></div>
+				    </div>
+				</td>
+				<td>
+				    <div id="image"></div>
+				</td>
+		</table>
+	    <br />
+	    <h2>Nedlasting</h2>
+	    Dimensjoner
+	    <br />
+	    X<input type="number" id="width" value="500" min="100" max="1000" step="100"/>
+	    Y<input type="number" id="height" value="300" min="100" max="600" step="100"/>
+	    <button type="button" onclick="location.href=downloadWcs()">Data</button>
+	    <button type="button" onclick="downloadWms()">Bilde</button>
+	    <br />
+    	<button type="button" onclick="location.href=changeproj()">Endre KS</button>
+	</body>
 </html>
