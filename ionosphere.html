@@ -29,6 +29,7 @@
         <script src="OpenLayers-2.13/OpenLayers.debug.js"></script>
         <script src="proj4js/lib/proj4js-compressed.js"></script>
         <script type="text/javascript">
+            // Fetching variables from URL
             function getQueryVariable(variable){
                 var query = window.location.search.substring(1);
                 var vars = query.split("&");
@@ -38,18 +39,27 @@
                 }
                 return(false);
             }
-            var sesolstormKont, height, width, map, vtec_wms, roti_wms, rotiag_wms, r_wms, grid_wms, run, timeString,timeText, layer;
+            // Initializing variables
+            var sesolstormKont, height, width, map, vtec_wms, roti_wms, rotiag_wms, r_wms, k_wms, run, timeString,timeText, layer;
+            // Main function
             function init(){
                 if((navigator.userAgent.indexOf('Opera')==-1)&&(navigator.userAgent.indexOf('Chrome')==-1)){
-                    alert("Vennligst bruk enten Opera eller Chrome.\r\nDu er registrert med:\r\n" + navigator.userAgent)
+                    // The particular calendar we're using only works properly in Webkit-based browsers
+                    alert("Please use Opera or Chrome.\r\nYou're registered using:\r\n" + navigator.userAgent)
                 }
+                // Start with this layer
                 layer='VTEC'
+                // Disable looping as standard
                 run=0;
+                // Check if url contains a specific startingtime
                 timeString=getQueryVariable("startTime");
+                // If not, find the last five-minute interval based on current time minus one minute (the one minute allows us some time to transfer data on the backend
                 if (timeString == false){
                     timeString =  new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
                 }
+                // Check if a specific coordinate-system has been requested in URL
                 proj=getQueryVariable("crs");
+                // If not, use 4326 as standard
                 if (proj == false){
                     proj="4326";
                 }
@@ -62,14 +72,18 @@
                 timeText.value=timeString;
                 width=document.getElementById("width");
                 height=document.getElementById("height");
+                // Set up some possible projections
                 Proj4js.defs["EPSG:32633"] = "+proj=utm +zone=33 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
                 Proj4js.defs["EPSG:3575"] = "+proj=laea +lat_0=90 +lon_0=10 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
                 var sourceProj=new OpenLayers.Projection("EPSG:4326");
                 var destProj=new OpenLayers.Projection("EPSG:"+proj);
                 var geoExtent = new OpenLayers.Bounds();
+                // Define extents of mapview
                 geoExtent.extend(new OpenLayers.LonLat(-13, 46));
                 geoExtent.extend(new OpenLayers.LonLat(44, 84));
+                // Transform extents in case different projection has been set (candidate for an if-statement, possibly move to where we set standard projection)
                 var extent=geoExtent.transform(sourceProj , destProj);
+                // Initialize map
                 map = new OpenLayers.Map('map',  { 
                     controls: [
                         new OpenLayers.Control.PanZoom(),
@@ -88,7 +102,7 @@
                     restrictedExtent:extent,
                     projection: destProj 
                 });
-                    
+                // Initialize layers    
                 vtec_wms = new OpenLayers.Layer.WMS("VTEC","http://wms.geonorge.no/skwms1/wms.ionosphere?",
                      {
                          layers:"VTEC",transparent:false,
@@ -130,7 +144,7 @@
                         transitionEffect: 'resize',
                         opacity: 1
                     });
-                var k_wms = new OpenLayers.Layer.WMS( "Kystkontur", "http://wms.geonorge.no/skwms1/wms.ionosphere?", 
+                k_wms = new OpenLayers.Layer.WMS( "Kystkontur", "http://wms.geonorge.no/skwms1/wms.ionosphere?", 
                     {
                         layers: 'Overlay', 
                         transparent:true, 
@@ -142,17 +156,11 @@
                         transitionEffect: 'resize',
                         opacity: 1
                     });
+                // Add layers to map and zoom to extents
                 map.addLayers([k_wms,vtec_wms, roti_wms,rotiag_wms]);
                 map.zoomToMaxExtent();
-                var layerName="Grid";
-                var layerBoolean=false;
-                var layerArray = map.layers;
-                for (var i=0;i<layerArray.length;i++) {
-                    if (map.layers[i].name == layerName) {
-                        map.layers[i].setVisibility(layerBoolean);
-                    }
-                }
             }
+            // If we want to change coordinate-system
             function changeproj() {
                 if (proj==4326){
                     proj=3575;
@@ -160,9 +168,10 @@
                 else{
                     proj=4326;
                 }
-                                
-                return 'http://skrivte57/old/ionosphere/ionosphere.html?startTime=' + timeText.value + '&crs=' + proj;
-            } 
+                // Reload page with variables for time and coordinate-system                
+                return document.URL.split('?')[0]+'?startTime=' + timeText.value + '&crs=' + proj;
+            }
+            // Return the name of current layer 
             function getActiveBaseMap(){
                 var layerArray = map.layers;
                 for (var i=0;i<layerArray.length;i++) {
@@ -171,6 +180,7 @@
                     }
                 }
             }
+            // Download image from current solution (seSolstorm) to compare
             function downloadPng() {
                 layer=getActiveBaseMap();
                 var year=timeText.value.substring(0,4); 
@@ -179,21 +189,26 @@
                 var image=document.getElementById("image");
                 image.innerHTML='<img src="http://sesolstorm.kartverket.no/rtim/plots/'+ year +'/'+month+'/'+day+'/'+layer+'/'+layer.replace('_','')+'Grid_'+ timeText.value.substring(0,16).replace('T','_').replace(':','-') + '.png" />'
             }
+            // Download current image from wms
             function downloadWms(layer) {
                 layer=getActiveBaseMap();
                 window.open('http://http://wms.geonorge.no/skwms1/ionosphere?service=wms&version=1.1.1&request=getmap&layers='+layer+'&srs=epsg:4326&format=image/png&transparent=true&time='+timeText.value+'&bbox=-10.5,49.5,40.5,80.5&width='+width.value+'&height='+height.value);
             }
+            // Download data from wcs
             function downloadWcs(layer) {
                 layer=getActiveBaseMap();
                 return('http://http://wms.geonorge.no/skwms1/ionosphere?service=wcs&version=1.0.0&request=getcoverage&coverage='+layer+'&crs=epsg:4326&resx=0.1&resy=0.1&format=geotiff&transparent=true&time='+timeText.value);
             }
+            // Start loop
             function start() {
                 run=1;
                 timeStepper(1);
             }
+            // Stop loop
             function stop() {
                 run=0;
             }
+            // Generic function to navigate time
             function timeStepper(steps) {
                 var tmpTime=new Date(Math.floor((new Date().getTime()-60000)/300000)*300000).toISOString().substring(0,19);
                 if (new Date(tmpTime) <= new Date(timeText.value)) {
@@ -205,9 +220,7 @@
                     window.setTimeout(timeStepper, (1000), 1);
                 }
             }
-            function updateTime(){
-                updateMap();
-            }
+            // Reload map
             function updateMap(){
                 vtec_wms.mergeNewParams({'time':timeText.value});
                 roti_wms.mergeNewParams({'time':timeText.value});
@@ -222,28 +235,50 @@
         <table>
             <tr>
                 <td>
-                     <h1 id="title">WMS Time Eksempel</h1>
+                     <h1 id="title">
+                         WMS Time Eksempel
+                     </h1>
                 </td>
                 <td>
-                     <h1 id="title">Sesolstorm</h1>
+                     <h1 id="title">
+                         Sesolstorm
+                     </h1>
                 </td>
             </tr>
             <tr>
                 <td>
-                     <h2>Tidspunkt (UTC, lokaltid - 2 timer) </h2>
+                     <h2>
+                         Tidspunkt (UTC, lokaltid - 2 timer)
+                     </h2>
                      Loop (timer):
                      <input type="number" id="loop" value="1" min="0.5" max="24" step="0.5"/>
                      <input type="datetime-local" id="timeText" step="300"/>
-                     <button type="button" onclick="updateTime()">Sett tid</button>
-                     <button type="button" onclick="start()">Start</button>
-                     <button type="button" onclick="stop()">Stopp</button>
-                     <button type="button" onclick="timeStepper(-1)">- 5 min</button>
-                     <button type="button" onclick="timeStepper(1)">+ 5 min</button>
-                     <button type="button" onclick="timeStepper(-12)">- 60 min</button>
-                     <button type="button" onclick="timeStepper(12)">+ 60 min</button>
+                     <button type="button" onclick="updateMap()">
+                         Sett tid
+                     </button>
+                     <button type="button" onclick="start()">
+                         Start
+                     </button>
+                     <button type="button" onclick="stop()">
+                         Stopp
+                     </button>
+                     <button type="button" onclick="timeStepper(-1)">
+                         - 5 min
+                     </button>
+                     <button type="button" onclick="timeStepper(1)">
+                         + 5 min
+                     </button>
+                     <button type="button" onclick="timeStepper(-12)">
+                         - 60 min
+                     </button>
+                     <button type="button" onclick="timeStepper(12)">
+                         + 60 min
+                     </button>
                 </td>
                 <td>
-                     <button type="button" onclick="downloadPng()">Sesolstorm</button>
+                     <button type="button" onclick="downloadPng()">
+                         Sesolstorm
+                     </button>
                      <input type="checkbox" id="sesolstormKont"/>
                      Kontinuerlig oppdatering
                 </td>
