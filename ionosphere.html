@@ -53,7 +53,7 @@
                 run=0;
                 // Check if url contains a specific startingtime
                 timeString=getQueryVariable("startTime");
-                // If not, find the last five-minute interval based on current time minus one minute (the one minute allows us some time to transfer data on the backend
+                // If not, find the previous five-minute (the 5 minutes allows us some time to transfer data on the backend
                 if (timeString == false){
                     timeString =  new Date(Math.floor((new Date().getTime()-300000)/300000)*300000).toISOString().substring(0,19);
                 }
@@ -210,6 +210,7 @@
             }
             // Generic function to navigate time
             function timeStepper(steps) {
+                // Round down maxtime to last five-minute point
                 var tmpTime=new Date(Math.floor((new Date().getTime()-300000)/300000)*300000).toISOString().substring(0,19);
                 if (new Date(tmpTime) <= new Date(timeText.value)) {
                     steps=(document.getElementById("loop").value*-12); 
